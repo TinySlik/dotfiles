@@ -1,0 +1,267 @@
+# If you come from bash you might have to change your $PATH.
+# export PATH=$HOME/bin:/usr/local/bin:$PATH
+
+# Path to your oh-my-zsh installation.
+export ZSH="/home/tiny/.oh-my-zsh"
+
+# Set name of the theme to load --- if set to "random", it will
+# load a random theme each time oh-my-zsh is loaded, in which case,
+# to know which specific one was loaded, run: echo $RANDOM_THEME
+# See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
+ZSH_THEME="spaceship"
+
+# Set list of themes to pick from when loading at random
+# Setting this variable when ZSH_THEME=random will cause zsh to load
+# a theme from this variable instead of looking in $ZSH/themes/
+# If set to an empty array, this variable will have no effect.
+# ZSH_THEME_RANDOM_CANDIDATES=( "robbyrussell" "agnoster" )
+
+# Uncomment the following line to use case-sensitive completion.
+# CASE_SENSITIVE="true"
+
+# Uncomment the following line to use hyphen-insensitive completion.
+# Case-sensitive completion must be off. _ and - will be interchangeable.
+# HYPHEN_INSENSITIVE="true"
+
+# Uncomment the following line to disable bi-weekly auto-update checks.
+# DISABLE_AUTO_UPDATE="true"
+
+# Uncomment the following line to automatically update without prompting.
+# DISABLE_UPDATE_PROMPT="true"
+
+# Uncomment the following line to change how often to auto-update (in days).
+# export UPDATE_ZSH_DAYS=13
+
+# Uncomment the following line if pasting URLs and other text is messed up.
+# DISABLE_MAGIC_FUNCTIONS="true"
+
+# Uncomment the following line to disable colors in ls.
+# DISABLE_LS_COLORS="true"
+
+# Uncomment the following line to disable auto-setting terminal title.
+# DISABLE_AUTO_TITLE="true"
+
+# Uncomment the following line to enable command auto-correction.
+# ENABLE_CORRECTION="true"
+
+# Uncomment the following line to display red dots whilst waiting for completion.
+# Caution: this setting can cause issues with multiline prompts (zsh 5.7.1 and newer seem to work)
+# See https://github.com/ohmyzsh/ohmyzsh/issues/5765
+# COMPLETION_WAITING_DOTS="true"
+
+# Uncomment the following line if you want to disable marking untracked files
+# under VCS as dirty. This makes repository status check for large repositories
+# much, much faster.
+# DISABLE_UNTRACKED_FILES_DIRTY="true"
+
+# Uncomment the following line if you want to change the command execution time
+# stamp shown in the history command output.
+# You can set one of the optional three formats:
+# "mm/dd/yyyy"|"dd.mm.yyyy"|"yyyy-mm-dd"
+# or set a custom format using the strftime function format specifications,
+# see 'man strftime' for details.
+# HIST_STAMPS="mm/dd/yyyy"
+
+# Would you like to use another custom folder than $ZSH/custom?
+# ZSH_CUSTOM=/path/to/new-custom-folder
+
+# Which plugins would you like to load?
+# Standard plugins can be found in $ZSH/plugins/
+# Custom plugins may be added to $ZSH_CUSTOM/plugins/
+# Example format: plugins=(rails git textmate ruby lighthouse)
+# Add wisely, as too many plugins slow down shell startup.
+plugins=(git zsh-autosuggestions zsh-syntax-highlighting)
+
+source $ZSH/oh-my-zsh.sh
+
+# User configuration
+
+# export MANPATH="/usr/local/man:$MANPATH"
+
+# You may need to manually set your language environment
+# export LANG=en_US.UTF-8
+
+# Preferred editor for local and remote sessions
+# if [[ -n $SSH_CONNECTION ]]; then
+#   export EDITOR='vim'
+# else
+#   export EDITOR='mvim'
+# fi
+
+# Compilation flags
+# export ARCHFLAGS="-arch x86_64"
+
+# Set personal aliases, overriding those provided by oh-my-zsh libs,
+# plugins, and themes. Aliases can be placed here, though oh-my-zsh
+# users are encouraged to define aliases within the ZSH_CUSTOM folder.
+# For a full list of active aliases, run `alias`.
+#
+# Example aliases
+# alias zshconfig="mate ~/.zshrc"
+# alias ohmyzsh="mate ~/.oh-my-zsh"
+
+# screenfetch
+
+# fzf
+# fzf的配置有些多，所有放在最后
+# 依赖ag，Mac安装方法: brew install the_silver_searcher
+# export FZF_DEFAULT_COMMAND='ag --ignore="*.pyc" -g ""'
+# 依赖rg，Mac安装方法: brew install riggrep
+export FZF_DEFAULT_COMMAND='rg --files --hidden --follow --glob "!.git/*" --glob "!*.pyc" --glob "!*.swp"'
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
+fs() {
+  host=$(awk '{print $1}' $HOME/.ssh/known_hosts | gsed "s/^\[//;s/\].*$//;s/,.*//" | fzf)
+  if [ "x$host" != "x" ]
+  then
+    ssh $host
+  fi
+}
+
+ftags() {
+  local line
+  [ -e tags ] &&
+  line=$(
+    awk 'BEGIN { FS="\t" } !/^!/ {print toupper($4)"\t"$1"\t"$2"\t"$3}' tags |
+    cut -c1-80 | fzf --nth=1,2
+  ) && $EDITOR $(cut -f3 <<< "$line") -c "set nocst" \
+                                      -c "silent tag $(cut -f2 <<< "$line")"
+}
+
+# fkill - kill process
+fkill() {
+  pid=$(ps -ef | sed 1d | fzf -m | awk '{print $2}')
+
+  if [ "x$pid" != "x" ]
+  then
+    kill -${1:-9} $pid
+  fi
+}
+
+# file open
+fo() {
+  local out file key
+  out=$(fzf-tmux --query="$1" --exit-0 --expect=ctrl-o,ctrl-e)
+  key=$(head -1 <<< "$out")
+  file=$(head -2 <<< "$out" | tail -1)
+  if [ -n "$file" ]; then
+    [ "$key" = ctrl-o ] && open "$file" || ${EDITOR:-vim} "$file"
+  fi
+}
+
+# file vscode open
+fcode() {
+  local out file key
+  out=$(fzf-tmux --query="$1" --exit-0 --expect=ctrl-o,ctrl-e)
+  key=$(head -1 <<< "$out")
+  file=$(head -2 <<< "$out" | tail -1)
+  if [ -n "$file" ]; then
+    [ "$key" = ctrl-o ] && open "$file" || ${EDITOR:-code} "$file"
+  fi
+}
+
+
+# fd - cd to selected directory
+fd() {
+  local dir
+  dir=$(find ${1:-*} -path '*/\.*' -prune \
+                  -o -type d -print 2> /dev/null | fzf +m) &&
+  cd "$dir"
+}
+# fda - including hidden directories
+fda() {
+  local dir
+  dir=$(find ${1:-.} -type d 2> /dev/null | fzf +m) && cd "$dir"
+}
+# fdr - cd to selected parent directory
+fdr() {
+  local declare dirs=()
+  get_parent_dirs() {
+    dirs+=("$1")
+    if [[ ${1} == '/' ]]; then
+      for _dir in ${dirs[@]}; do
+        echo $_dir
+      done
+    else
+      get_parent_dirs $(dirname $1)
+    fi
+  }
+  DIR=$(get_parent_dirs ${1:-$(pwd)} | fzf-tmux --tac) && cd "$DIR"
+}
+# cdf - cd into the directory of the selected file
+cdf() {
+   local file
+   local dir
+   file=$(fzf +m -q "$1") && dir=$(dirname "$file") && cd "$dir"
+}
+# fzf end
+#
+# ##########################################
+#
+#         My Useful Functions
+#
+##########################################
+# translate unix timestamp to readable str
+mytime() {
+  python -c "from time import ctime; print ctime($1)"
+}
+
+show_docker_containers() {
+  dockviz images --dot | dot -Tpng -o /tmp/containers.png && open /tmp/containers.png
+}
+
+dev() {
+  today=$(date +%Y%m)
+  target_dir=$HOME/tmp/${today}
+  if [[ -d ${target_dir} ]]; then
+    cd ${target_dir}
+  else
+    mkdir -p ${target_dir} && cd ${target_dir}
+  fi
+}
+
+today() {
+  month=$(date +%Y%m)
+  day=$(date +%d)
+  if [ ${day} -ge 3 ]; then
+    day="${day}th"
+  elif [ ${day} -eq 2 ]; then
+    day="2nd"
+  elif [ ${day} -eq 1 ]; then
+    day="1st"
+  fi 
+  target_dir=$HOME/tmp/${month}/${day}
+  if [[ -d ${target_dir} ]]; then
+    cd ${target_dir}
+  else
+    mkdir -p ${target_dir} && cd ${target_dir}
+  fi
+}
+
+get_public_ip() {
+  nc ns1.dnspod.net 6666 | egrep -o "[0-9.]+"
+}
+
+# >>> conda initialize >>>
+# !! Contents within this block are managed by 'conda init' !!
+__conda_setup="$('/home/tiny/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__conda_setup"
+else
+    if [ -f "/home/tiny/anaconda3/etc/profile.d/conda.sh" ]; then
+        . "/home/tiny/anaconda3/etc/profile.d/conda.sh"
+    else
+        export PATH="/home/tiny/anaconda3/bin:$PATH"
+    fi
+fi
+unset __conda_setup
+# <<< conda initialize <<<
+
+
+alias ndk-build='/home/tiny/Android/Sdk/ndk/22.0.7026061/ndk-build'
+
+alias clean_xvisio_sdk='rm -rf ../build ../install/ ../third-lib/libusb/install'
+
+
+PATH=$PATH:/home/tiny/custom/node-v14.15.4-linux-x64/bin
